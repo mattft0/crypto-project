@@ -1,4 +1,4 @@
-from rfc7448 import x25519, add, sub, computeVcoordinate, mult
+from rfc7748 import x25519, add, sub, computeVcoordinate, mult
 from algebra import mod_inv, int_to_bytes
 from random import randint
 from algebra import bruteLog

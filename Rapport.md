@@ -94,3 +94,40 @@ if __name__ == "__main__":
 
 
 ### 2.2 Signature implementation test   
+
+![Signature implenatation test](signatureimplementation.png)
+
+## 3. ElGamal encryption algorithm
+
+### 3.1 Multiplicative version
+
+1. ElGamal key generation
+* Inputs
+    * PARAM_P (Prime modulus 𝑝, 2048 bits)
+    * PARAM_G (Generator 𝑔, 2048 bits)
+* Outputs
+    * Private key 𝑥 (random integer, 256 bits)
+    * Public key 𝑦 = 𝑔^𝑥 mod 𝑝, 2048 bits
+2. ElGamal encryption
+* Inputs
+    * Message 𝑚 (as an integer, ≤ 𝑝−1)
+    * Public key 𝑦 (2048 bits)
+    * Random nonce 𝑘 (random integer, 256 bits)
+    * 𝑔 , 𝑝 (2048 bits)
+* Outputs
+    * Ciphertext: (c1, c2)
+        * c1 = 𝑔^𝑘 mod 𝑝 (2048 bits)
+        * c2 = 𝑚 ⋅ 𝑦^𝑘 mod 𝑝 (2048 bits)
+3. ElGamal decryption
+* Inputs
+    * Ciphertext (c1,c2) (each 2048 bits)
+    * Private key 𝑥 (256 bits)
+    * 𝑝 (2048 bits)
+* Outputs
+    * Decrypted message 𝑚
+
+### 3.2 Homomorphic encryption : multiplicative version
+
+![Decrypted m3](decryptedm3.png)
+
+### 3.3 Homomorphic encryption : additive version
