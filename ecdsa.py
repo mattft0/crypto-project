@@ -36,5 +36,50 @@ def ECDSA_sign(message, private_key): # signature à partir de la clée privée 
     return deriv, sign
 
 
-def ECDSA_verify("""TBC"""):
-    return """TBC"""
+def ECDSA_verify(message, signature, public_key):
+    # Unpack the signature
+    r, s = signature
+    
+    # Unpack the public key (Pub_U, Pub_V)
+    Pub_U, Pub_V = public_key
+    
+    # Step 1: Compute the hash of the message
+    hash_tempo = H(message)
+    
+    # Step 2: Compute the modular inverse of s
+    w = mod_inv(s, ORDER)
+    
+    # Step 3: Compute u1 and u2
+    u1 = (hash_tempo * w) % ORDER
+    u2 = (r * w) % ORDER
+    
+    # Step 4: Compute the point P = u1 * Base + u2 * Pub
+    U1_U, U1_V = mult(u1, BaseU, BaseV, p)
+    U2_U, U2_V = mult(u2, Pub_U, Pub_V, p)
+    
+    # Add the two points
+    U_U, U_V = add(U1_U, U1_V, U2_U, U2_V, p)
+    
+    # Step 5: Verify the x-coordinate of the point matches r
+    return (r == U_U % ORDER)
+
+if __name__ == "__main__":
+
+    # 5.1 ECDSA validation
+    private_key, public_key = ECDSA_generate_keys()
+
+    # Step 2: Define a test message (as bytes)
+    message = b"Hello, this is a test message for ECDSA."
+
+    # Step 3: Sign the message using the private key
+    signature = ECDSA_sign(message, private_key)
+    print("Signature:", signature)
+
+    # Step 4: Verify the signature using the public key
+    is_valid = ECDSA_verify(message, signature, public_key)
+    
+    # Step 5: Output the verification result
+    if is_valid:
+        print("Signature is valid.")
+    else:
+        print("Signature is invalid.")
