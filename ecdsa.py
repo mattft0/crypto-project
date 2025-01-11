@@ -1,85 +1,77 @@
-from rfc7748 import x25519, add, computeVcoordinate, mult
+from rfc7748 import add, computeVcoordinate, mult
 from Crypto.Hash import SHA256
-from random import randint
 from algebra import mod_inv
 import secrets
 
+# Constants
 p = 2**255 - 19
-ORDER = (2**252 + 27742317777372353535851937790883648493)
-
+ORDER = 2**252 + 27742317777372353535851937790883648493
 BaseU = 9
 BaseV = computeVcoordinate(BaseU)
 
-
 def H(message):
     h = SHA256.new(message)
-    return (int(h.hexdigest(), 16))
+    return int(h.hexdigest(), 16)
 
 def ECDSA_generate_nonce():
-    return (int(secrets.randbelow(ORDER -1) +1))
-    
-def ECDSA_generate_keys(): #génère une clée privée qui est choisi aléatoirement dans ECDSA_generate_nonce | partie publique correspond à la "transposition" sur la courbe donc des coordonnées sur celle ci
+    return secrets.randbelow(ORDER - 1) + 1
+
+def ECDSA_generate_keys():
     priv = ECDSA_generate_nonce()
     Pub_U, Pub_V = mult(priv, BaseU, BaseV, p)
     return priv, (Pub_U, Pub_V)
-#print(ECDSA_generate_keys())
 
-def ECDSA_sign(message, private_key): # signature à partir de la clée privée et un message donnée 
+def ECDSA_sign(message, private_key):
     hash_tempo = H(message)
     nonce = ECDSA_generate_nonce()
     U, _ = mult(nonce, BaseU, BaseV, p)
     deriv = U % ORDER
-
     k_inv = mod_inv(nonce, ORDER)
     sign = (k_inv * (hash_tempo + deriv * private_key)) % ORDER
-           
     return deriv, sign
 
-
 def ECDSA_verify(message, signature, public_key):
-    # Unpack the signature
     r, s = signature
-    
-    # Unpack the public key (Pub_U, Pub_V)
     Pub_U, Pub_V = public_key
-    
-    # Step 1: Compute the hash of the message
     hash_tempo = H(message)
-    
-    # Step 2: Compute the modular inverse of s
     w = mod_inv(s, ORDER)
-    
-    # Step 3: Compute u1 and u2
     u1 = (hash_tempo * w) % ORDER
     u2 = (r * w) % ORDER
-    
-    # Step 4: Compute the point P = u1 * Base + u2 * Pub
     U1_U, U1_V = mult(u1, BaseU, BaseV, p)
     U2_U, U2_V = mult(u2, Pub_U, Pub_V, p)
-    
-    # Add the two points
     U_U, U_V = add(U1_U, U1_V, U2_U, U2_V, p)
-    
-    # Step 5: Verify the x-coordinate of the point matches r
-    return (r == U_U % ORDER)
+    return r == U_U % ORDER
 
 if __name__ == "__main__":
+    # Fixed test values for 5.2
+    message = b"A very very important message !"
+    private_key = 0xc841f4896fe86c971bedbcf114a6cfd97e4454c9be9aba876d5a195995e2ba8
+    fixed_nonce = 0x2c92639dcf417afeae31e0f8fddc8e48b3e11d840523f54aaa97174221faee6
 
-    # 5.1 ECDSA validation
-    private_key, public_key = ECDSA_generate_keys()
+    # Expected results
+    r = 0x429146a1375614034c65c2b6a86b2fc4aec00147f223cb2a7a22272d4a3fdd2
+    s = 0xf23bcdebe2e0d8571d195a9b8a05364b14944032032eeeecd22a0f6e94f8f33
 
-    # Step 2: Define a test message (as bytes)
-    message = b"Hello, this is a test message for ECDSA."
+    # Generate signature
+    def ECDSA_sign_fixed_nonce(message, private_key, fixed_nonce):
+        hash_tempo = H(message)
+        U, _ = mult(fixed_nonce, BaseU, BaseV, p)
+        deriv = U % ORDER
+        k_inv = mod_inv(fixed_nonce, ORDER)
+        sign = (k_inv * (hash_tempo + deriv * private_key)) % ORDER
+        return deriv, sign
 
-    # Step 3: Sign the message using the private key
-    signature = ECDSA_sign(message, private_key)
+    derivation, signe = ECDSA_sign_fixed_nonce(message, private_key, fixed_nonce)
+    signature = (derivation, signe)
+
+    # Check against expected results
     print("Signature:", signature)
+    print("Matches expected r and s:", derivation == r and signe == s)
 
-    # Step 4: Verify the signature using the public key
+    # Public key computation
+    Pub_U, Pub_V = mult(private_key, BaseU, BaseV, p)
+    public_key = (Pub_U, Pub_V)
+
+    # Verify signature
     is_valid = ECDSA_verify(message, signature, public_key)
-    
-    # Step 5: Output the verification result
-    if is_valid:
-        print("Signature is valid.")
-    else:
-        print("Signature is invalid.")
+    print("Signature verification result:", is_valid)
